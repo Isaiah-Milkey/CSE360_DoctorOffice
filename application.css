@@ -1,0 +1,45 @@
+.button {
+	-fx-text-fill: #FEFEFF;
+    -fx-font: bold 32px "Arial";
+    -fx-padding: 5;
+    -fx-border-radius: 5;
+    -fx-background-color: #37718E;
+    -fx-shape: null;
+    -fx-min-width: 150;
+}
+
+.button:hover {
+	-fx-background-color:#164A64;
+    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.4), 2, 1.0, 0, 0);
+    -fx-text-alignment: center;
+}
+
+.textFields {
+	-fx-text-fill: rgba(22, 74, 100, .6);
+	-fx-font: italic 20px "Arial";
+    -fx-base: #37718E;
+    -fx-background: #E7F8FE;
+}
+
+.userInv:hover {
+	-fx-background-color:#164A64;
+    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.4), 2, 1.0, 0, 0);
+    -fx-text-alignment: center;
+}
+
+.labelB {
+	-fx-text-fill: #164A64;
+    -fx-font-size: 16pt;
+    -fx-font-family: "Arial";
+    -fx-base: #37718E;
+    -fx-background: #E7F8FE;
+    -fx-min-width: 150;
+}
+
+.root {
+	-fx-text-fill: #FEFEFF;
+    -fx-font-size: 36pt;
+    -fx-font-family: "Arial";
+    -fx-base: #37718E;
+    -fx-background: #E7F8FE;
+}
