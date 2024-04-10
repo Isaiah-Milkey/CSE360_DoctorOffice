@@ -9,7 +9,6 @@ import javafx.application.Application;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
 import javafx.scene.control.*;
-import javafx.scene.effect.BlendMode;
 import javafx.scene.layout.*;
 import javafx.animation.*;
 import javafx.scene.paint.Color;
@@ -18,9 +17,6 @@ import javafx.scene.Group;
 import javafx.geometry.Pos;
 import javafx.geometry.Insets;
 import javafx.scene.shape.*;
-
-import javafx.event.ActionEvent;
-import javafx.event.EventHandler;
 
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
@@ -37,14 +33,18 @@ public class Main extends Application {
 	Pane logBox;
 	Image medStar, user, userInv;
 	ImageView starView, userView, userInvView;
-	Label 	docOff, docOff2, 
-			patientLN, patientFN, patientDOB, 
-			heightL, weightL, sexL, blankL,
-			currAddL, currPharmaL, currMedsL;
+	Label 	 docOff, docOff2, 
+			 patientLN, patientFN, patientDOB, 
+			 heightL, weightL, sexL, blankL,
+			 currAddL, currPharmaL, currMedsL;
 	TextField userName, password, lastName, 
 			 firstName, weight, heightFt, heightIn, 
-			 address, currPharma, currMeds;
-	Button login, signUp, confirmLogin;
+			 address, currPharma, currMeds,
+			 vWeightTF, vHeightTF, vBTempTF, vBPressTF;
+	TextArea medsL, medsTA, doctorNotesTA, prevHealthIssuesTA,
+			 prevMedsTA, immunizationsTA;
+	Button   login, signUp, confirmLogin, createVisit;
+	CheckBox twelveCB;
 	
 	public static void main(String[] args) {
 		launch(args);
@@ -105,6 +105,16 @@ public class Main extends Application {
 		tt.setOnFinished(e -> {
 			stage.setScene(end);
 		});
+	}
+	
+	public TextArea createta(String innerText) {
+		TextArea f = new TextArea();
+		GridPane.setColumnSpan(f, 2);
+		f.getStyleClass().add("textFields");
+		f.setPromptText(innerText);
+		f.setMinWidth(100);
+		f.setMaxWidth(200);
+		return f;
 	}
 	
 	public TextField createtf(String innerText) {
@@ -275,7 +285,7 @@ public class Main extends Application {
 		userView.setTranslateX(10);
 		userView.setTranslateY(10);
 		userView.setImage(user);
-		docOff2 = new Label("Patient Signup");
+		docOff2 = new Label("Signup");
 		docOff2.setStyle("-fx-text-fill: #E7F8FE;");
 		docOff2.setPrefWidth(10000);
 		docOff2.setAlignment(Pos.CENTER_RIGHT);
@@ -333,7 +343,7 @@ public class Main extends Application {
 		Label b2 = createLabel(" ");
 		Button confirmSignUp = new Button("Confirm");
 		confirmSignUp.setAlignment(Pos.CENTER);
-		confirmSignUp.setOnAction(e -> switchScenes(patientView()));
+		confirmSignUp.setOnAction(e -> switchScenes(doctorView()));
 		
 		left.add(patientLN, 0, 0);
 		left.add(patientFN, 0, 1);
@@ -430,7 +440,7 @@ public class Main extends Application {
 		userView.setTranslateX(10);
 		userView.setTranslateY(10);
 		userView.setImage(user);
-		docOff2 = new Label("Pediatric Doctors Office");
+		docOff2 = new Label("Patient Portal");
 		docOff2.setStyle("-fx-text-fill: #E7F8FE;");
 		docOff2.setPrefWidth(10000);
 		docOff2.setAlignment(Pos.CENTER_RIGHT);
@@ -485,16 +495,339 @@ public class Main extends Application {
 		return scene;
 	}
 	
+	public Scene doctorView () {
+		//rectRoot = new Group();
+		//rectRoot.getChildren().add(rect2);
+		//bigRoot = new AnchorPane();			// bigger pane to hold most nodes, other than moving ones
+		sroot = new BorderPane(); 			// established the main pane || everything is built on root
+		sroot.setBorder(new Border(new BorderStroke(Color.BLACK, BorderStrokeStyle.SOLID, CornerRadii.EMPTY, BorderWidths.DEFAULT)));
+		
+		// top bar header thing
+		imageBox = new HBox();
+		imageBox.setPadding(new Insets(20, 20, 20, 20));
+		medStar = new Image(getClass().getResourceAsStream("star.png"));
+		user = new Image(getClass().getResourceAsStream("icon.png"));
+		starView = new ImageView();
+		userView = new ImageView();
+		starView.setFitWidth(100);
+		starView.setFitHeight(100);
+		starView.setImage(medStar);
+		userView.setFitWidth(75);
+		userView.setFitHeight(75);
+		userView.setTranslateX(10);
+		userView.setTranslateY(10);
+		userView.setImage(user);
+		docOff2 = new Label("Doctor Portal");
+		docOff2.setStyle("-fx-text-fill: #E7F8FE;");
+		docOff2.setPrefWidth(10000);
+		docOff2.setAlignment(Pos.CENTER_RIGHT);
+		docOff2.setPadding(new Insets(20, 20, 20, 20));
+		imageBox.getChildren().addAll(userView, docOff2, starView);
+		
+		// central VBox
+		VBox nurseV = new VBox();
+		
+		// top line HBox
+		HBox topLine = new HBox(50);
+		topLine.setPadding(new Insets(20, 20, 20, 20));
+		
+		// patient name HBox
+		HBox patientBox = new HBox(10);
+		Label patientL = createLabel("Patient: "); // patient label
+		patientL.setStyle("-fx-font: 20px \"Arial\";");
+		patientL.setStyle("-fx-min-width: 100;");
+		patientL.setAlignment(Pos.CENTER);
+		ComboBox<String> patientNames = new ComboBox<String>();
+		patientNames.setPromptText("Name");
+		patientNames.getItems().add("Temp Child");
+		patientNames.getStyleClass().add("labelB");
+		patientNames.setMinWidth(100);
+		patientNames.setMaxWidth(200);
+		patientBox.getChildren().addAll(patientL, patientNames);
+		
+		// prev visits HBox
+		HBox prevVisitsBox = new HBox(10);
+		Label prevVisitsL = createLabel("Previous Visits: "); // patient label
+		prevVisitsL.setStyle("-fx-font: 20px \"Arial\";");
+		prevVisitsL.setAlignment(Pos.CENTER);
+		ComboBox<String> prevVisits = new ComboBox<String>();
+		prevVisits.setPromptText("Visit");
+		prevVisits.getItems().add("Temp Visits");
+		prevVisits.getStyleClass().add("labelB");
+		prevVisits.setMinWidth(100);
+		prevVisits.setMaxWidth(200);
+		
+		prevVisitsBox.getChildren().addAll(prevVisitsL, prevVisits);
+		
+		// create new visit button
+		createVisit = new Button("New Visit");
+		
+		// add all to top line
+		topLine.getChildren().addAll(patientBox, prevVisitsBox, createVisit);
+		topLine.setAlignment(Pos.CENTER);	
+		
+		// Center HBox
+		HBox centralBox = new HBox(70);
+		
+		// doctor VBox
+		VBox doctorBox = new VBox(10);
+		Label doctorNotesL = createLabel("Doctor's Notes");
+		doctorNotesL.setStyle("-fx-font: bold 26px \"Arial\";");
+		doctorNotesL.setUnderline(true);
+		doctorNotesTA = createta("Type here");
+		doctorNotesTA.setMaxHeight(100);
+		Label medsL = createLabel("Prescribe Medications");
+		medsL.setStyle("-fx-font: bold 26px \"Arial\";");
+		medsL.setUnderline(true);
+		medsTA = createta("Type here");
+		medsTA.setMaxHeight(100);
+		doctorBox.getChildren().addAll(doctorNotesL, doctorNotesTA, medsL, medsTA);
+		doctorBox.setAlignment(Pos.CENTER);
+		
+		// med history
+		VBox medHistoryBox = new VBox(10);
+		Label medicalHistoryL = createLabel("Medical History");
+		medicalHistoryL.setStyle("-fx-font: bold 26px \"Arial\";");
+		medicalHistoryL.setUnderline(true);
+		Label prevHealthIssuesL = createLabel("Previous Health Issues");
+		prevHealthIssuesTA = createta("Type here");
+		prevHealthIssuesTA.setMaxHeight(60);
+		Label prevMedsL = createLabel("Previous Medications");
+		prevMedsTA = createta("Type here");
+		prevMedsTA.setMaxHeight(60);
+		Label immunizationsTL = createLabel("History of Immunizations");
+		immunizationsTA = createta("Type here");
+		immunizationsTA.setMaxHeight(60);
+		medHistoryBox.getChildren().addAll(medicalHistoryL, prevHealthIssuesL, prevHealthIssuesTA, 
+											prevMedsL, prevMedsTA, immunizationsTL, immunizationsTA);
+		medHistoryBox.setAlignment(Pos.CENTER);
+		
+		// vitals info
+		VBox vitalsInfoBroad = new VBox(20);
+		HBox vitals = new HBox(20);
+		
+		Label vitalsInfoL = createLabel("Vitals Information");
+		vitalsInfoL.setStyle("-fx-font: bold 26px \"Arial\";");
+		vitalsInfoL.setUnderline(true);
+
+		
+		VBox vitalsLabels = new VBox(27);
+		Label vWeightL = createLabel("Weight");
+		Label vHeightL = createLabel("Height");
+		Label vBTempL = createLabel("Body Temp.");
+		Label vBPressL = createLabel("Blood Pressure");
+		vitalsLabels.getChildren().addAll(vWeightL, vHeightL, vBTempL, vBPressL);
+		
+		VBox vitalsTFs = new VBox(15);
+		vWeightTF = createtf("#");
+		vWeightTF.setMaxWidth(80);
+		vHeightTF = createtf("#");
+		vHeightTF.setMaxWidth(80);
+		vBTempTF = createtf("#");
+		vBTempTF.setMaxWidth(80);
+		vBPressTF = createtf("#");
+		vBPressTF.setMaxWidth(80);
+		vitalsTFs.getChildren().addAll(vWeightTF, vHeightTF, vBTempTF, vBPressTF);
+		
+		vitals.getChildren().addAll(vitalsLabels, vitalsTFs);
+		
+		CheckBox twelveCB = new CheckBox("Over 12 years old?");
+		twelveCB.setStyle("-fx-font: bold 26px \"Arial\";");
+		
+		vitalsInfoBroad.getChildren().addAll(vitalsInfoL, vitals, twelveCB);
+		vitalsInfoBroad.setAlignment(Pos.CENTER);
+		
+		// center box
+		centralBox.getChildren().addAll(doctorBox, medHistoryBox, vitalsInfoBroad);
+		centralBox.setAlignment(Pos.CENTER);
+		
+		// add all to nurseV
+		nurseV.getChildren().addAll(topLine, centralBox);	
+		
+		// spacer box
+		blankBox = new HBox();
+		
+		//imageBox.setStyle("-fx-background-color: #37718E;");
+		blankBox.setPrefHeight(140);
+		
+		// finalization
+		sroot.setTop(imageBox);
+		sroot.setCenter(nurseV);
+		sroot.setPrefWidth(1000);
+		sroot.setPrefHeight(600);
+		sroot.getChildren().add(rectRoot);
+
+		sroot.getChildren().get(2).toBack();
+		rect2.setStyle("-fx-fill: #37718E;");
+		rect2.widthProperty().bind(sroot.widthProperty());
+
+		createVisit.setStyle("-fx-font: 20px \"Arial\";");
+		Scene scene = new Scene(sroot);				// creates and launches the application
+		scene.getStylesheets().add(getClass().getResource("application.css").toExternalForm());
+		scene.setFill(Color.web("#E7F8FE"));
+		return scene;
+	}
+	
+	public Scene nurseView() {
+		//rectRoot = new Group();
+		//rectRoot.getChildren().add(rect2);
+		//bigRoot = new AnchorPane();			// bigger pane to hold most nodes, other than moving ones
+		sroot = new BorderPane(); 			// established the main pane || everything is built on root
+		sroot.setBorder(new Border(new BorderStroke(Color.BLACK, BorderStrokeStyle.SOLID, CornerRadii.EMPTY, BorderWidths.DEFAULT)));
+		
+		// top bar header thing
+		imageBox = new HBox();
+		imageBox.setPadding(new Insets(20, 20, 20, 20));
+		medStar = new Image(getClass().getResourceAsStream("star.png"));
+		user = new Image(getClass().getResourceAsStream("icon.png"));
+		starView = new ImageView();
+		userView = new ImageView();
+		starView.setFitWidth(100);
+		starView.setFitHeight(100);
+		starView.setImage(medStar);
+		userView.setFitWidth(75);
+		userView.setFitHeight(75);
+		userView.setTranslateX(10);
+		userView.setTranslateY(10);
+		userView.setImage(user);
+		docOff2 = new Label("Nurse Portal");
+		docOff2.setStyle("-fx-text-fill: #E7F8FE;");
+		docOff2.setPrefWidth(10000);
+		docOff2.setAlignment(Pos.CENTER_RIGHT);
+		docOff2.setPadding(new Insets(20, 20, 20, 20));
+		imageBox.getChildren().addAll(userView, docOff2, starView);
+		
+		// central VBox
+		VBox nurseV = new VBox();
+		
+		// top line HBox
+		HBox topLine = new HBox(50);
+		topLine.setPadding(new Insets(20, 20, 20, 20));
+		
+		// patient name HBox
+		HBox patientBox = new HBox(10);
+		Label patientL = createLabel("Patient: "); // patient label
+		patientL.setStyle("-fx-font: 20px \"Arial\";");
+		patientL.setStyle("-fx-min-width: 100;");
+		patientL.setAlignment(Pos.CENTER);
+		ComboBox<String> patientNames = new ComboBox<String>();
+		patientNames.setPromptText("Name");
+		patientNames.getItems().add("Temp Child");
+		patientNames.getStyleClass().add("labelB");
+		patientNames.setMinWidth(100);
+		patientNames.setMaxWidth(200);
+		patientBox.getChildren().addAll(patientL, patientNames);
+		
+		// prev visits HBox
+		HBox prevVisitsBox = new HBox(10);
+		Label prevVisitsL = createLabel("Previous Visits: "); // patient label
+		prevVisitsL.setStyle("-fx-font: 20px \"Arial\";");
+		prevVisitsL.setAlignment(Pos.CENTER);
+		ComboBox<String> prevVisits = new ComboBox<String>();
+		prevVisits.setPromptText("Visit");
+		prevVisits.getItems().add("Temp Visits");
+		prevVisits.getStyleClass().add("labelB");
+		prevVisits.setMinWidth(100);
+		prevVisits.setMaxWidth(200);
+		
+		prevVisitsBox.getChildren().addAll(prevVisitsL, prevVisits);
+		
+		// create new visit button
+		createVisit = new Button("New Visit");
+		
+		// add all to top line
+		topLine.getChildren().addAll(patientBox, prevVisitsBox, createVisit);
+		topLine.setAlignment(Pos.CENTER);	
+		
+		// Center HBox
+		HBox centralBox = new HBox(70);
+		
+		// med history
+		VBox medHistoryBox = new VBox(10);
+		Label medicalHistoryL = createLabel("Medical History");
+		medicalHistoryL.setStyle("-fx-font: bold 26px \"Arial\";");
+		medicalHistoryL.setUnderline(true);
+		Label prevHealthIssuesL = createLabel("Previous Health Issues");
+		prevHealthIssuesTA = createta("Type here");
+		prevHealthIssuesTA.setMaxHeight(60);
+		Label prevMedsL = createLabel("Previous Medications");
+		prevMedsTA = createta("Type here");
+		prevMedsTA.setMaxHeight(60);
+		Label immunizationsTL = createLabel("History of Immunizations");
+		immunizationsTA = createta("Type here");
+		immunizationsTA.setMaxHeight(60);
+		medHistoryBox.getChildren().addAll(medicalHistoryL, prevHealthIssuesL, prevHealthIssuesTA, 
+											prevMedsL, prevMedsTA, immunizationsTL, immunizationsTA);
+		medHistoryBox.setAlignment(Pos.CENTER);
+		
+		// vitals info
+		VBox vitalsInfoBroad = new VBox(20);
+		HBox vitals = new HBox(20);
+		
+		Label vitalsInfoL = createLabel("Vitals Information");
+		vitalsInfoL.setStyle("-fx-font: bold 26px \"Arial\";");
+		vitalsInfoL.setUnderline(true);
+
+		
+		VBox vitalsLabels = new VBox(27);
+		Label vWeightL = createLabel("Weight");
+		Label vHeightL = createLabel("Height");
+		Label vBTempL = createLabel("Body Temp.");
+		Label vBPressL = createLabel("Blood Pressure");
+		vitalsLabels.getChildren().addAll(vWeightL, vHeightL, vBTempL, vBPressL);
+		
+		VBox vitalsTFs = new VBox(15);
+		vWeightTF = createtf("#");
+		vWeightTF.setMaxWidth(80);
+		vHeightTF = createtf("#");
+		vHeightTF.setMaxWidth(80);
+		vBTempTF = createtf("#");
+		vBTempTF.setMaxWidth(80);
+		vBPressTF = createtf("#");
+		vBPressTF.setMaxWidth(80);
+		vitalsTFs.getChildren().addAll(vWeightTF, vHeightTF, vBTempTF, vBPressTF);
+		
+		vitals.getChildren().addAll(vitalsLabels, vitalsTFs);
+		
+		twelveCB = new CheckBox("Over 12 years old?");
+		twelveCB.setStyle("-fx-font: bold 26px \"Arial\";");
+		
+		vitalsInfoBroad.getChildren().addAll(vitalsInfoL, vitals, twelveCB);
+		vitalsInfoBroad.setAlignment(Pos.CENTER);
+		
+		// center box
+		centralBox.getChildren().addAll(medHistoryBox, vitalsInfoBroad);
+		centralBox.setAlignment(Pos.CENTER);
+		
+		// add all to nurseV
+		nurseV.getChildren().addAll(topLine, centralBox);	
+		
+		// spacer box
+		blankBox = new HBox();
+		
+		//imageBox.setStyle("-fx-background-color: #37718E;");
+		blankBox.setPrefHeight(140);
+		
+		// finalization
+		sroot.setTop(imageBox);
+		sroot.setCenter(nurseV);
+		sroot.setPrefWidth(1000);
+		sroot.setPrefHeight(600);
+		sroot.getChildren().add(rectRoot);
+
+		sroot.getChildren().get(2).toBack();
+		rect2.setStyle("-fx-fill: #37718E;");
+		rect2.widthProperty().bind(sroot.widthProperty());
+
+		createVisit.setStyle("-fx-font: 20px \"Arial\";");
+		Scene scene = new Scene(sroot);				// creates and launches the application
+		scene.getStylesheets().add(getClass().getResource("application.css").toExternalForm());
+		scene.setFill(Color.web("#E7F8FE"));
+		return scene;
+	}
+	
 	String getPatientInfo() {
 		return  "NO INFO CURRENTLY\n\n" +
 				"THE PATIENT MIGHT BE DEAD";
-	}
-	
-	// ButtonHandler handles the order, cancel, and confirm functions
-	public class ButtonHandler implements EventHandler<ActionEvent> {
-		public void handle(ActionEvent e) {
-			Button newButton = (Button)e.getSource();
-			newButton.getScene();
-		}
 	}
 }
