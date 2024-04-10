@@ -1,24 +1,16 @@
-package application;
+
 	
 
 // convert logBox to an HBox
 
 import javafx.scene.Node;
 import javafx.application.Application;
-
+import javafx.event.ActionEvent;
+import javafx.event.EventHandler;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
 import javafx.scene.control.*;
-import javafx.scene.effect.BlendMode;
 import javafx.scene.layout.*;
-
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.time.LocalDate;
-
 import javafx.animation.*;
 import javafx.scene.paint.Color;
 import javafx.scene.Group;
@@ -26,9 +18,6 @@ import javafx.scene.Group;
 import javafx.geometry.Pos;
 import javafx.geometry.Insets;
 import javafx.scene.shape.*;
-
-import javafx.event.ActionEvent;
-import javafx.event.EventHandler;
 
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
@@ -48,18 +37,19 @@ public class Main extends Application {
 	Label 	 docOff, docOff2, 
 			 patientLN, patientFN, patientDOB, 
 			 heightL, weightL, sexL, blankL,
-			 currAddL, currPharmaL, currMedsL, createPasswordL;
+			 currAddL, currPharmaL, currMedsL;
 	TextField userName, password, lastName, 
 			 firstName, weight, heightFt, heightIn, 
-			 address, currPharma, currMeds, createPassword,
+			 address, currPharma, currMeds,
 			 vWeightTF, vHeightTF, vBTempTF, vBPressTF;
 	TextArea medsL, medsTA, doctorNotesTA, prevHealthIssuesTA,
 			 prevMedsTA, immunizationsTA;
-	Button   login, signUp, confirmLogin, confirmSignUp, createVisit;
+	Button   login, signUp, confirmLogin, createVisit;
 	CheckBox twelveCB;
-	DatePicker pDOB = new DatePicker(); 
-	ComboBox<String> sexBox = new ComboBox<String>();
-	String fileName;
+	
+	// For Doctor Page
+	ComboBox<String> prevVisits;
+	String doc_selectedPatient;
 	
 	public static void main(String[] args) {
 		launch(args);
@@ -250,7 +240,7 @@ public class Main extends Application {
 		password.setMaxWidth(200);
 		confirmLogin = new Button("Login");
 		confirmLogin.setPrefWidth(200);
-		confirmLogin.setOnAction(new FieldHandler());
+		confirmLogin.setOnAction(e -> switchScenes(patientView()));
 		((VBox) logBox).setSpacing(25);
 		((VBox) logBox).setAlignment(Pos.CENTER);
 		logBox.getChildren().addAll(userName, password, confirmLogin);
@@ -321,6 +311,7 @@ public class Main extends Application {
 		firstName = createtf("First Name");
 		patientDOB = createLabel("Patient DOB");
 		// DataPicker options
+		DatePicker pDOB = new DatePicker();
 		GridPane.setColumnSpan(pDOB, 2);
 		pDOB.setPromptText("01/01/1980");
 		pDOB.getStyleClass().add("labelB");
@@ -339,6 +330,7 @@ public class Main extends Application {
 		heightIn.setMaxWidth(95);
 		sexL = createLabel("Sex");
 		// Sex Drop-Down
+		ComboBox<String> sexBox = new ComboBox<String>();
 		GridPane.setColumnSpan(sexBox, 2);
 		sexBox.getItems().addAll("Male", "Female", "Other");
 		sexBox.getStyleClass().add("labelB");
@@ -352,13 +344,11 @@ public class Main extends Application {
 		currPharma = createtf("Pharmacy");
 		currMedsL = createLabel("Current Medications");
 		currMeds = createtf("Medication");
-		createPasswordL = createLabel("Create Password");
-		createPassword = createtf("Password");
 		Label b1 = createLabel(" ");
 		Label b2 = createLabel(" ");
-		confirmSignUp = new Button("Confirm");
+		Button confirmSignUp = new Button("Confirm");
 		confirmSignUp.setAlignment(Pos.CENTER);
-		confirmSignUp.setOnAction(new SignUpHandler());
+		confirmSignUp.setOnAction(e -> switchScenes(doctorView()));
 		
 		left.add(patientLN, 0, 0);
 		left.add(patientFN, 0, 1);
@@ -380,12 +370,10 @@ public class Main extends Application {
 		right.add(currAddL, 0, 0);
 		right.add(currPharmaL, 0, 1);
 		right.add(currMedsL, 0, 2);
-		right.add(createPasswordL, 0, 3);
 		
 		right.add(address, 2, 0);
 		right.add(currPharma, 2, 1);
 		right.add(currMeds, 2, 2);
-		right.add(createPassword, 2, 3);
 		right.add(b1, 0, 3);
 		right.add(b2, 0, 4);
 		//right.add(confirmSignUp, 2, 5);
@@ -403,10 +391,14 @@ public class Main extends Application {
 		((HBox) logBox).setAlignment(Pos.BASELINE_CENTER);
 		left.setPadding(new Insets(0,50,0,0));
 		right.setPadding(new Insets(0,0,0,50));
-		logBox.getChildren().addAll(left, right);		
+		logBox.getChildren().addAll(left, right);
+		
+		//logBox.getChildren().addAll(userName, password, confirmLogin);
+		
 		
 		// spacer box
 		blankBox = new HBox();
+		//imageBox.setStyle("-fx-background-color: #37718E;");
 		blankBox.setPrefHeight(140);
 		blankBox.getChildren().add(confirmSignUp);
 		//blankBox.prefWidth(1000);
@@ -468,6 +460,7 @@ public class Main extends Application {
 		uInfoLabel.setStyle("-fx-font: bold italic 40px \"Arial\"; ");
 		Label bulkInfo = createLabel(getPatientInfo());
 		bulkInfo.setStyle("-fx-font: 18px \"Arial\";");
+		bulkInfo.setWrapText(true);
 		uInfoBox.getChildren().addAll(uInfoLabel, bulkInfo);
 		
 		// right box for visit information
@@ -479,6 +472,7 @@ public class Main extends Application {
 		vInfoLabel.setStyle("-fx-font: bold italic 40px \"Arial\"; ");
 		Label vBulkInfo = createLabel(getPatientInfo());
 		vBulkInfo.setStyle("-fx-font: 18px \"Arial\";");
+		bulkInfo.setWrapText(true);
 		vLabelBox.getChildren().add(vInfoLabel);
 		vInfoBox.getChildren().addAll(vLabelBox, vBulkInfo);
 		
@@ -507,6 +501,8 @@ public class Main extends Application {
 	}
 	
 	public Scene doctorView () {
+		EmployeeClass employeeClass = new EmployeeClass();
+		
 		//rectRoot = new Group();
 		//rectRoot.getChildren().add(rect2);
 		//bigRoot = new AnchorPane();			// bigger pane to hold most nodes, other than moving ones
@@ -548,7 +544,7 @@ public class Main extends Application {
 		patientL.setStyle("-fx-font: 20px \"Arial\";");
 		patientL.setStyle("-fx-min-width: 100;");
 		patientL.setAlignment(Pos.CENTER);
-		ComboBox<String> patientNames = new ComboBox<String>();
+			ComboBox<String> patientNames = employeeClass.getPatientList();
 		patientNames.setPromptText("Name");
 		patientNames.getItems().add("Temp Child");
 		patientNames.getStyleClass().add("labelB");
@@ -561,7 +557,7 @@ public class Main extends Application {
 		Label prevVisitsL = createLabel("Previous Visits: "); // patient label
 		prevVisitsL.setStyle("-fx-font: 20px \"Arial\";");
 		prevVisitsL.setAlignment(Pos.CENTER);
-		ComboBox<String> prevVisits = new ComboBox<String>();
+			prevVisits = new ComboBox<String>(); //should be updated on every event on patientNames ComboBox
 		prevVisits.setPromptText("Visit");
 		prevVisits.getItems().add("Temp Visits");
 		prevVisits.getStyleClass().add("labelB");
@@ -660,6 +656,42 @@ public class Main extends Application {
 		
 		//imageBox.setStyle("-fx-background-color: #37718E;");
 		blankBox.setPrefHeight(140);
+		
+		// action listener(s)
+		
+		
+		//Middle Section
+		patientNames.setOnAction(new EventHandler<ActionEvent>() {
+			@Override
+			public void handle(ActionEvent arg0) {
+				doc_selectedPatient = patientNames.valueProperty().get();
+				employeeClass.refreshPatientList(prevVisitsBox, doc_selectedPatient, patientNames, patientNames, prevVisitsL);
+				
+				// TODO Auto-generated method stub
+				/*
+				doc_selectedPatient = patientNames.valueProperty().get();
+				prevVisits = employeeClass.getVisitsList(doc_selectedPatient);
+				prevVisitsL.setStyle("-fx-font: 20px \"Arial\";");
+				prevVisitsL.setAlignment(Pos.CENTER);
+					//prevVisits = new ComboBox<String>();//employeeClass.getVisitsList("null"); //should be updated on every event on patientNames ComboBox
+				prevVisits.setPromptText("Visit");
+				prevVisits.getItems().add("Temp Visits");
+				prevVisits.getStyleClass().add("labelB");
+				prevVisits.setMinWidth(100);
+				prevVisits.setMaxWidth(200);
+				
+				prevVisitsBox.getChildren().addAll(prevVisitsL, prevVisits);
+				*/
+			}
+		});
+		
+		//Right Side
+		doc_selectedPatient = patientNames.valueProperty().get();
+		createVisit.setOnAction(e -> employeeClass.createNewVisit(doc_selectedPatient));
+		prevVisits = employeeClass.getVisitsList(doc_selectedPatient);
+		employeeClass.refreshPatientList(prevVisitsBox, doc_selectedPatient, patientNames, patientNames, prevVisitsL);
+		
+		// end of action listeners
 		
 		// finalization
 		sroot.setTop(imageBox);
@@ -838,149 +870,7 @@ public class Main extends Application {
 	}
 	
 	String getPatientInfo() {
-		// first name, last name, birthday, see and change contact info, summary of visit, send messages to nursedoctor
-		//String line;
-		try {
-        	BufferedReader infoReader = new BufferedReader(new FileReader(fileName));
-            String passwordFromFile = infoReader.readLine() + "\n";
-            String firstNameFromFile = "Name: \t\t\t" + infoReader.readLine() + " ";
-            String lastNameFromFile = infoReader.readLine() + "\n";
-            String DOBFromFile = "Date of Birth: \t\t" + infoReader.readLine() + "\n";
-            String heightFromFile = "Height: \t\t\t" + infoReader.readLine() + "\n";
-            String weightFromFile = "Weight: \t\t\t" + infoReader.readLine() + "\n";
-            String sexFromFile = "Sex: \t\t\t" + infoReader.readLine() + "\n";
-            String addressFromFile = "Address: \t\t\t" + infoReader.readLine() + "\n";
-            String pharmacyFromFile = "Pharmacy: \t\t" + infoReader.readLine() + "\n";
-            String medicationFromFile = "Medication(s): \t\t" + infoReader.readLine() + "\n";
-            String allOfThem = firstNameFromFile + lastNameFromFile + DOBFromFile + heightFromFile + weightFromFile + sexFromFile + addressFromFile + pharmacyFromFile + medicationFromFile;
-            infoReader.close();
-            System.out.println(allOfThem);
-            return allOfThem;
-
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
 		return  "NO INFO CURRENTLY\n\n" +
 				"THE PATIENT MIGHT BE DEAD";
 	}
-
-	public boolean fieldChecker() {
-		if (userName.getText().isEmpty()) {
-            return false;
-        }
-		if (password.getText().isEmpty()) {
-			return false;
-		}
-		return true;
-	}
-
-	public boolean writePatientInfoToFile() {
-        // Create the filename using the patient first name and last name
-        fileName = firstName.getText() + "_" + lastName.getText() + ".txt";
-
-        String patientLastName = lastName.getText(); 
-        String patientFirstName = firstName.getText();
-        LocalDate dob = pDOB.getValue();
-        String height = heightFt.getText() + "'" + heightIn.getText() + "\""; 
-        String weight = this.weight.getText(); 
-        String sex = sexBox.getValue();
-        String currentAddress = address.getText();
-        String currentPharmacy = currPharma.getText();
-        String currentMedications = currMeds.getText();
-        String patientPassword = createPassword.getText();
-
-        // Alert if patient leaves any of the fields empty
-        if (patientLastName.isEmpty() || patientFirstName.isEmpty() || dob == null ||
-                height.isEmpty() || weight.isEmpty() || sex == null || 
-                currentAddress.isEmpty() || currentPharmacy.isEmpty() || currentMedications.isEmpty() || patientPassword.isEmpty()) {
-            // If any field is empty, display an alert
-            Alert alert = new Alert(Alert.AlertType.ERROR);
-            alert.setTitle("Input Error");
-            alert.setHeaderText(null);
-            alert.setContentText("Please fill out all fields.");
-            alert.showAndWait();
-            return false; // Stop further execution
-        }
-
-        // Write content to the file
-        try {
-        	BufferedWriter writer = new BufferedWriter(new FileWriter(fileName));
-        	writer.write(patientPassword + "\n");
-        	writer.write(patientFirstName + "\n");
-        	writer.write(patientLastName + "\n");
-        	writer.write(dob + "\n");
-        	writer.write(height + "\n");
-        	writer.write(weight + "\n");
-        	writer.write(sex + "\n");
-        	writer.write(currentAddress + "\n");
-        	writer.write(currentPharmacy + "\n");
-        	writer.write(currentMedications + "\n");
-            writer.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return true;
-    }
-
-	public boolean loginCredentials() {
-		String userNameText = userName.getText();
-        String passwordText = password.getText();
-        fileName = userNameText + ".txt";
-
-        try {
-        	BufferedReader infoReader = new BufferedReader(new FileReader(fileName));
-            String passwordFromFile = infoReader.readLine(); // Read password from the file
-            if (passwordFromFile.equals(passwordText)) {
-            	infoReader.close();
-            	return true;
-            }
-
-            infoReader.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return false;
-	}
-
-	// ButtonHandler handles the order, cancel, and confirm functions
-	public class ButtonHandler implements EventHandler<ActionEvent> {
-		public void handle(ActionEvent e) {
-			Button newButton = (Button)e.getSource();
-			newButton.getScene();
-		}
-	}
-
-	public class FieldHandler implements EventHandler<ActionEvent> {
-	    public void handle(ActionEvent e) {
-	        if (e.getSource() == confirmLogin) {
-	        	if (fieldChecker() == true && loginCredentials() == true) {
-	        		switchScenes(patientView());
-	        	}
-	        	else {
-	        		Alert alert = new Alert(Alert.AlertType.ERROR);
-	                alert.setTitle("Input Error");
-	                alert.setHeaderText(null);
-	                alert.setContentText("Please enter a correct Username and/or Password.");
-	                alert.showAndWait();
-	        	}
-	        }
-	    }
-	}
-
-	public class SignUpHandler implements EventHandler<ActionEvent> {
-	    public void handle(ActionEvent e) {
-	        if (e.getSource() == confirmSignUp) {
-	        	if (writePatientInfoToFile()) {
-	        		switchScenes(patientView());
-	        	}
-	        }
-	        else {
-        		Alert alert = new Alert(Alert.AlertType.ERROR);
-                alert.setTitle("Input Error");
-                alert.setHeaderText(null);
-                alert.setContentText("Please enter Username and/or Password.");
-                alert.showAndWait();
-        	}
-        }
-    }
 }
