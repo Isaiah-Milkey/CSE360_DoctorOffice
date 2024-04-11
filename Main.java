@@ -7,6 +7,7 @@ import javafx.scene.Node;
 import javafx.application.Application;
 
 import javafx.scene.Scene;
+import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.scene.control.*;
 import javafx.scene.effect.BlendMode;
@@ -14,10 +15,13 @@ import javafx.scene.layout.*;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 import javafx.animation.*;
 import javafx.scene.paint.Color;
@@ -52,14 +56,117 @@ public class Main extends Application {
 	TextField userName, password, lastName, 
 			 firstName, weight, heightFt, heightIn, 
 			 address, currPharma, currMeds, createPassword,
-			 vWeightTF, vHeightTF, vBTempTF, vBPressTF;
+			 vWeightTF, vHeightTF, vBTempTF, vBPressTF, msgField;
 	TextArea medsL, medsTA, doctorNotesTA, prevHealthIssuesTA,
-			 prevMedsTA, immunizationsTA;
+			 prevMedsTA, immunizationsTA, chatArea;
 	Button   login, signUp, confirmLogin, confirmSignUp, createVisit;
 	CheckBox twelveCB;
 	DatePicker pDOB = new DatePicker(); 
 	ComboBox<String> sexBox = new ComboBox<String>();
+	ComboBox<String> userBox = new ComboBox<String>();
 	String fileName;
+	File chatHistoryFile;
+	String userType; //If patient is logged in or Doctor/Nurse
+	String patientID;
+	String doctorNurseID = "Doctor_Caggiula";
+	
+	public void chatPopup() {
+		//create basic chat history file and check that it was successfully created
+		chatHistoryFile = new File(getChatHistoryFilePath());
+		if(chatHistoryFile.exists()) {
+			System.out.println("Chat history file exists.");
+		} else {
+			System.out.println("Chat history file does not exist.");
+		}
+		
+		//Simple UI layout just for functionality
+		BorderPane root = new BorderPane();
+		root.setPadding(new Insets(10));
+		
+		chatArea = new TextArea();
+		chatArea.setEditable(false);
+		chatArea.setWrapText(true);
+		chatArea.setStyle("-fx-font: bold italic 16px \"Arial\"; ");
+		root.setCenter(chatArea);
+		
+		msgField = new TextField();
+		msgField.setPromptText("Type your message...");
+		msgField.setStyle("-fx-font: bold italic 16px \"Arial\"; ");
+		root.setBottom(msgField);
+		
+		Button sendButton = new Button("Send");
+		sendButton.setStyle("-fx-font: 16px \"Arial\"; -fx-min-width: 80; -fx-max-width: 80;");
+		sendButton.setOnAction(e-> sendMessage());
+		root.setRight(sendButton);
+		
+		loadChatHistory();
+		
+		Scene scene = new Scene(root, 400, 300);
+		scene.getStylesheets().add(getClass().getResource("application.css").toExternalForm());
+		Stage chatStage = new Stage();
+		chatStage.setScene(scene);
+		chatStage.setTitle("Filesystem Based Chat");
+		chatStage.initModality(Modality.APPLICATION_MODAL);
+		chatStage.showAndWait();
+	}
+	
+	//function to send a message
+	private void sendMessage() {
+		String msg = msgField.getText().trim();
+		if(!msg.isEmpty()) {
+			logMessage(msg);
+			msgField.clear();
+		}
+	}
+	//will save message along with userType and time, userType is set in log in class
+	private void logMessage(String msg) {
+		
+		//if statement can be removed/commented out if you want to test sending messages and if they get saved to file correctly
+		//if(userType != null && patientID != null && doctorNurseID != null) {
+		
+		// *****************************************************************************************************************
+		// add functionality to have doctors choose patients and vice versa based on current doctors and patients that exist
+		// *****************************************************************************************************************
+		
+		try(PrintWriter writer = new PrintWriter(new BufferedWriter(new FileWriter(getChatHistoryFilePath(),true)))) {
+			LocalDateTime timestamp = LocalDateTime.now();
+			String time = timestamp + "";
+			time = time.substring(5, 7) + "/" + time.substring(8, 10) + "@" + time.substring(11, 19);
+			writer.println("[" + time + "] " + userType + ": " + msg);
+			chatArea.appendText("[" + time + "] You: " + msg + "\n");
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+	
+//will load chat history but user info needs to be set in log in class first
+	private void loadChatHistory() {
+		try (BufferedReader reader = new BufferedReader(new FileReader(chatHistoryFile))){
+			String line;
+			while((line = reader.readLine()) != null) {
+				chatArea.appendText(line + "\n");
+			}
+		} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+	
+	//create a unique file for patient and doctor/nurse, log in class needs to set the info first though
+	private String getChatHistoryFilePath() {
+		return "chat_history_" + patientID + "_" + doctorNurseID + ".txt";
+	}
+	
+	public void setPatientID(String patientID) {
+		this.patientID = patientID;
+	}
+	
+	public void setDoctorNurseID(String doctorNurseID) {
+		this.doctorNurseID = doctorNurseID;
+	}
+	
+	public void setUserType(String userType) {
+		this.userType = userType;
+	}
 	
 	public static void main(String[] args) {
 		launch(args);
@@ -148,6 +255,184 @@ public class Main extends Application {
 		return l;
 	}
 	
+	String getPatientInfo() {
+		// first name, last name, birthday, see and change contact info, summary of visit, send messages to nursedoctor
+		//String line;
+		try {
+        	BufferedReader infoReader = new BufferedReader(new FileReader(fileName));
+            String passwordFromFile = infoReader.readLine() + "\n";
+            String userTypeFromFile = infoReader.readLine() + "\n";
+            String firstNameFromFile = "Name: \t\t\t" + infoReader.readLine();
+            String lastNameFromFile =  " " + infoReader.readLine() + "\n";
+            String userType = "User Type: \t\t" + userTypeFromFile;
+            String DOBFromFile = "Date of Birth: \t\t" + infoReader.readLine() + "\n";
+            String heightFromFile = "Height: \t\t\t" + infoReader.readLine() + "\n";
+            String weightFromFile = "Weight: \t\t\t" + infoReader.readLine() + "\n";
+            String sexFromFile = "Sex: \t\t\t" + infoReader.readLine() + "\n";
+            String addressFromFile = "Address: \t\t\t" + infoReader.readLine() + "\n";
+            String pharmacyFromFile = "Pharmacy: \t\t" + infoReader.readLine() + "\n";
+            String medicationFromFile = "Medication(s): \t\t" + infoReader.readLine() + "\n";
+            String allOfThem = firstNameFromFile + lastNameFromFile + userType + DOBFromFile + heightFromFile + weightFromFile + sexFromFile + addressFromFile + pharmacyFromFile + medicationFromFile;
+            infoReader.close();
+            System.out.println(allOfThem);
+            return allOfThem;
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+		return  "NO INFO CURRENTLY\n\n" +
+				"THE PATIENT MIGHT BE DEAD";
+	}
+
+	public boolean fieldChecker() {
+		if (userName.getText().isEmpty()) {
+            return false;
+        }
+		if (password.getText().isEmpty()) {
+			return false;
+		}
+		return true;
+	}
+
+	public boolean writePatientInfoToFile() {
+        // Create the filename using the patient first name and last name
+        fileName = firstName.getText() + "_" + lastName.getText() + ".txt";
+
+        String patientLastName = lastName.getText(); 
+        String patientFirstName = firstName.getText();
+        userType = userBox.getValue();
+        LocalDate dob = pDOB.getValue();
+        String height = heightFt.getText() + "'" + heightIn.getText() + "\""; 
+        String weight = this.weight.getText(); 
+        String sex = sexBox.getValue();
+        String currentAddress = address.getText();
+        String currentPharmacy = currPharma.getText();
+        String currentMedications = currMeds.getText();
+        String patientPassword = createPassword.getText();
+
+        // Alert if patient leaves any of the fields empty
+        if (patientLastName.isEmpty() || patientFirstName.isEmpty() || dob == null ||
+                height.isEmpty() || weight.isEmpty() || sex == null || 
+                currentAddress.isEmpty() || currentPharmacy.isEmpty() || 
+                currentMedications.isEmpty() || patientPassword.isEmpty() || userType.isEmpty()) {
+            // If any field is empty, display an alert
+            Alert alert = new Alert(Alert.AlertType.ERROR);
+            alert.setTitle("Input Error");
+            alert.setHeaderText(null);
+            alert.setContentText("Please fill out all fields.");
+            alert.showAndWait();
+            return false; // Stop further execution
+        }
+
+        // Write content to the file
+        try {
+        	BufferedWriter writer = new BufferedWriter(new FileWriter(fileName));
+        	writer.write(patientPassword + "\n");
+        	writer.write(userType + "\n");
+        	writer.write(patientFirstName + "\n");
+        	writer.write(patientLastName + "\n");
+        	writer.write(dob + "\n");
+        	writer.write(height + "\n");
+        	writer.write(weight + "\n");
+        	writer.write(sex + "\n");
+        	writer.write(currentAddress + "\n");
+        	writer.write(currentPharmacy + "\n");
+        	writer.write(currentMedications + "\n");
+            writer.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return true;
+    }
+
+	public String loginCredentials() {
+		String userNameText = userName.getText();
+        String passwordText = password.getText();
+        fileName = userNameText + ".txt";
+
+        try {
+        	BufferedReader infoReader = new BufferedReader(new FileReader(fileName));
+            String passwordFromFile = infoReader.readLine(); // Read password from the file
+            String userTypeFromFile = infoReader.readLine();
+            if (passwordFromFile.equals(passwordText)) {
+            	infoReader.close();
+    	    	System.out.println(userTypeFromFile);
+            	return userTypeFromFile;
+            }
+
+            infoReader.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+    	System.out.println("INVALID");
+        return "INVALID";
+	}
+
+	// ButtonHandler handles the order, cancel, and confirm functions
+	public class ButtonHandler implements EventHandler<ActionEvent> {
+		public void handle(ActionEvent e) {
+			Button newButton = (Button)e.getSource();
+			newButton.getScene();
+		}
+	}
+
+	public class FieldHandler implements EventHandler<ActionEvent> {
+	    public void handle(ActionEvent e) {
+	    	userType = loginCredentials().trim();
+	        if (e.getSource() == confirmLogin) {
+	        	if (fieldChecker() == true && userType != "INVALID") {
+	        		if (userType.equals("Patient")) {
+		        		setPatientID(userName.getText());
+		        		switchScenes(patientView());
+	        		}
+	        		else if (userType.equals("Doctor")) {
+	        			setPatientID(userName.getText());
+		        		switchScenes(doctorView());
+	        		}
+	        		else if (userType.equals("Nurse")) {
+	        			setPatientID(userName.getText());
+		        		switchScenes(nurseView());
+	        		}
+	        	}
+	        	else {
+	        		Alert alert = new Alert(Alert.AlertType.ERROR);
+	                alert.setTitle("Input Error");
+	                alert.setHeaderText(null);
+	                alert.setContentText("Please enter a correct Username and/or Password.");
+	                alert.showAndWait();
+	        	}
+	        }
+	    }
+	}
+
+	public class SignUpHandler implements EventHandler<ActionEvent> {
+	    public void handle(ActionEvent e) {
+	        if (e.getSource() == confirmSignUp) {
+	        	if (writePatientInfoToFile()) {
+	        		if (userType.equals("Patient")) {
+	        			setPatientID(firstName.getText() + "_" + lastName.getText());
+	        			switchScenes(patientView());
+	        		}
+	        		else if (userType.equals("Doctor")) {
+	        			setPatientID(firstName.getText() + "_" + lastName.getText());
+	        			switchScenes(doctorView());
+	        		}
+	        		else if (userType.equals("Nurse")) {
+	        			setPatientID(firstName.getText() + "_" + lastName.getText());
+		        		switchScenes(nurseView());
+	        		}
+	        	}
+	        }
+	        else {
+        		Alert alert = new Alert(Alert.AlertType.ERROR);
+                alert.setTitle("Input Error");
+                alert.setHeaderText(null);
+                alert.setContentText("Please enter Username and/or Password.");
+                alert.showAndWait();
+        	}
+        }
+    }
 	public Scene homePage() {
 		rect.setStyle("-fx-fill: #37718E;");
 		rectRoot = new Group();
@@ -354,6 +639,13 @@ public class Main extends Application {
 		currMeds = createtf("Medication");
 		createPasswordL = createLabel("Create Password");
 		createPassword = createtf("Password");
+		Label userTypeL = createLabel("User Type");
+		userBox.getItems().addAll("Patient", "Doctor", "Nurse");
+		userBox.getStyleClass().add("labelB");
+		userBox.setMinWidth(100);
+		userBox.setMaxWidth(200);
+		
+		
 		Label b1 = createLabel(" ");
 		Label b2 = createLabel(" ");
 		confirmSignUp = new Button("Confirm");
@@ -381,13 +673,16 @@ public class Main extends Application {
 		right.add(currPharmaL, 0, 1);
 		right.add(currMedsL, 0, 2);
 		right.add(createPasswordL, 0, 3);
+		right.add(userTypeL, 0, 4);
 		
 		right.add(address, 2, 0);
 		right.add(currPharma, 2, 1);
 		right.add(currMeds, 2, 2);
 		right.add(createPassword, 2, 3);
+		right.add(userBox, 2, 4);
 		right.add(b1, 0, 3);
 		right.add(b2, 0, 4);
+		
 		//right.add(confirmSignUp, 2, 5);
 		
 		//userName.setMinWidth(150);
@@ -480,7 +775,11 @@ public class Main extends Application {
 		Label vBulkInfo = createLabel(getPatientInfo());
 		vBulkInfo.setStyle("-fx-font: 18px \"Arial\";");
 		vLabelBox.getChildren().add(vInfoLabel);
-		vInfoBox.getChildren().addAll(vLabelBox, vBulkInfo);
+		
+		Button chatButton = new Button("Chat");
+		chatButton.setOnAction(e -> chatPopup());
+		
+		vInfoBox.getChildren().addAll(vLabelBox, vBulkInfo, chatButton);
 		
 		// spacer box
 		blankBox = new HBox();
@@ -643,9 +942,13 @@ public class Main extends Application {
 		vitals.getChildren().addAll(vitalsLabels, vitalsTFs);
 		
 		CheckBox twelveCB = new CheckBox("Over 12 years old?");
+		twelveCB.setSelected(false);
 		twelveCB.setStyle("-fx-font: bold 26px \"Arial\";");
 		
-		vitalsInfoBroad.getChildren().addAll(vitalsInfoL, vitals, twelveCB);
+		Button chatButton = new Button("Chat");
+		chatButton.setOnAction(e -> chatPopup());
+		
+		vitalsInfoBroad.getChildren().addAll(vitalsInfoL, vitals, twelveCB, chatButton);
 		vitalsInfoBroad.setAlignment(Pos.CENTER);
 		
 		// center box
@@ -803,7 +1106,10 @@ public class Main extends Application {
 		twelveCB = new CheckBox("Over 12 years old?");
 		twelveCB.setStyle("-fx-font: bold 26px \"Arial\";");
 		
-		vitalsInfoBroad.getChildren().addAll(vitalsInfoL, vitals, twelveCB);
+		Button chatButton = new Button("Chat");
+		chatButton.setOnAction(e -> chatPopup());
+		
+		vitalsInfoBroad.getChildren().addAll(vitalsInfoL, vitals, twelveCB, chatButton);
 		vitalsInfoBroad.setAlignment(Pos.CENTER);
 		
 		// center box
@@ -831,156 +1137,10 @@ public class Main extends Application {
 		rect2.widthProperty().bind(sroot.widthProperty());
 
 		createVisit.setStyle("-fx-font: 20px \"Arial\";");
+		chatButton.setStyle("-fx-font: 20px \"Arial\";");
 		Scene scene = new Scene(sroot);				// creates and launches the application
 		scene.getStylesheets().add(getClass().getResource("application.css").toExternalForm());
 		scene.setFill(Color.web("#E7F8FE"));
 		return scene;
 	}
-	
-	String getPatientInfo() {
-		// first name, last name, birthday, see and change contact info, summary of visit, send messages to nursedoctor
-		//String line;
-		try {
-        	BufferedReader infoReader = new BufferedReader(new FileReader(fileName));
-            String passwordFromFile = infoReader.readLine() + "\n";
-            String firstNameFromFile = "Name: \t\t\t" + infoReader.readLine() + " ";
-            String lastNameFromFile = infoReader.readLine() + "\n";
-            String DOBFromFile = "Date of Birth: \t\t" + infoReader.readLine() + "\n";
-            String heightFromFile = "Height: \t\t\t" + infoReader.readLine() + "\n";
-            String weightFromFile = "Weight: \t\t\t" + infoReader.readLine() + "\n";
-            String sexFromFile = "Sex: \t\t\t" + infoReader.readLine() + "\n";
-            String addressFromFile = "Address: \t\t\t" + infoReader.readLine() + "\n";
-            String pharmacyFromFile = "Pharmacy: \t\t" + infoReader.readLine() + "\n";
-            String medicationFromFile = "Medication(s): \t\t" + infoReader.readLine() + "\n";
-            String allOfThem = firstNameFromFile + lastNameFromFile + DOBFromFile + heightFromFile + weightFromFile + sexFromFile + addressFromFile + pharmacyFromFile + medicationFromFile;
-            infoReader.close();
-            System.out.println(allOfThem);
-            return allOfThem;
-
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-		return  "NO INFO CURRENTLY\n\n" +
-				"THE PATIENT MIGHT BE DEAD";
-	}
-
-	public boolean fieldChecker() {
-		if (userName.getText().isEmpty()) {
-            return false;
-        }
-		if (password.getText().isEmpty()) {
-			return false;
-		}
-		return true;
-	}
-
-	public boolean writePatientInfoToFile() {
-        // Create the filename using the patient first name and last name
-        fileName = firstName.getText() + "_" + lastName.getText() + ".txt";
-
-        String patientLastName = lastName.getText(); 
-        String patientFirstName = firstName.getText();
-        LocalDate dob = pDOB.getValue();
-        String height = heightFt.getText() + "'" + heightIn.getText() + "\""; 
-        String weight = this.weight.getText(); 
-        String sex = sexBox.getValue();
-        String currentAddress = address.getText();
-        String currentPharmacy = currPharma.getText();
-        String currentMedications = currMeds.getText();
-        String patientPassword = createPassword.getText();
-
-        // Alert if patient leaves any of the fields empty
-        if (patientLastName.isEmpty() || patientFirstName.isEmpty() || dob == null ||
-                height.isEmpty() || weight.isEmpty() || sex == null || 
-                currentAddress.isEmpty() || currentPharmacy.isEmpty() || currentMedications.isEmpty() || patientPassword.isEmpty()) {
-            // If any field is empty, display an alert
-            Alert alert = new Alert(Alert.AlertType.ERROR);
-            alert.setTitle("Input Error");
-            alert.setHeaderText(null);
-            alert.setContentText("Please fill out all fields.");
-            alert.showAndWait();
-            return false; // Stop further execution
-        }
-
-        // Write content to the file
-        try {
-        	BufferedWriter writer = new BufferedWriter(new FileWriter(fileName));
-        	writer.write(patientPassword + "\n");
-        	writer.write(patientFirstName + "\n");
-        	writer.write(patientLastName + "\n");
-        	writer.write(dob + "\n");
-        	writer.write(height + "\n");
-        	writer.write(weight + "\n");
-        	writer.write(sex + "\n");
-        	writer.write(currentAddress + "\n");
-        	writer.write(currentPharmacy + "\n");
-        	writer.write(currentMedications + "\n");
-            writer.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return true;
-    }
-
-	public boolean loginCredentials() {
-		String userNameText = userName.getText();
-        String passwordText = password.getText();
-        fileName = userNameText + ".txt";
-
-        try {
-        	BufferedReader infoReader = new BufferedReader(new FileReader(fileName));
-            String passwordFromFile = infoReader.readLine(); // Read password from the file
-            if (passwordFromFile.equals(passwordText)) {
-            	infoReader.close();
-            	return true;
-            }
-
-            infoReader.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return false;
-	}
-
-	// ButtonHandler handles the order, cancel, and confirm functions
-	public class ButtonHandler implements EventHandler<ActionEvent> {
-		public void handle(ActionEvent e) {
-			Button newButton = (Button)e.getSource();
-			newButton.getScene();
-		}
-	}
-
-	public class FieldHandler implements EventHandler<ActionEvent> {
-	    public void handle(ActionEvent e) {
-	        if (e.getSource() == confirmLogin) {
-	        	if (fieldChecker() == true && loginCredentials() == true) {
-	        		switchScenes(patientView());
-	        	}
-	        	else {
-	        		Alert alert = new Alert(Alert.AlertType.ERROR);
-	                alert.setTitle("Input Error");
-	                alert.setHeaderText(null);
-	                alert.setContentText("Please enter a correct Username and/or Password.");
-	                alert.showAndWait();
-	        	}
-	        }
-	    }
-	}
-
-	public class SignUpHandler implements EventHandler<ActionEvent> {
-	    public void handle(ActionEvent e) {
-	        if (e.getSource() == confirmSignUp) {
-	        	if (writePatientInfoToFile()) {
-	        		switchScenes(patientView());
-	        	}
-	        }
-	        else {
-        		Alert alert = new Alert(Alert.AlertType.ERROR);
-                alert.setTitle("Input Error");
-                alert.setHeaderText(null);
-                alert.setContentText("Please enter Username and/or Password.");
-                alert.showAndWait();
-        	}
-        }
-    }
 }
