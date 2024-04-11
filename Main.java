@@ -11,6 +11,16 @@ import javafx.scene.Scene;
 import javafx.stage.Stage;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
+
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.time.LocalDate;
+import java.util.Scanner;
+
 import javafx.animation.*;
 import javafx.scene.paint.Color;
 import javafx.scene.Group;
@@ -24,7 +34,7 @@ import javafx.scene.image.ImageView;
 import javafx.util.*;
 
 public class Main extends Application {
-	private Stage stage = new Stage();
+	 Stage stage = new Stage();
 	private Rectangle rect = new Rectangle(0, 0, 0, 141);
 	private Rectangle rect2 = new Rectangle(0, 0, 0, 141);
 	private Group rectRoot;
@@ -47,9 +57,15 @@ public class Main extends Application {
 	Button   login, signUp, confirmLogin, createVisit;
 	CheckBox twelveCB;
 	
-	// For Doctor Page
-	ComboBox<String> prevVisits;
+	// For Doctor Page --> Isaiah Added ///
+	//ComboBox<String> prevVisits;
 	String doc_selectedPatient;
+	String vitalsInfo = "";
+	String medicalHistory = "";
+	String immunizationHistory = "";
+	String doctorsNotes = "";
+	String prescribeMeds = "";
+	///////////////////////////////////////
 	
 	public static void main(String[] args) {
 		launch(args);
@@ -90,7 +106,6 @@ public class Main extends Application {
 		ParallelTransition finaltrn = new ParallelTransition();
 		ParallelTransition starttrn = new ParallelTransition();
 		SequentialTransition seq = new SequentialTransition();
-		
 		
 		ftUser.setRate(1);
 		starttrn.getChildren().addAll(ftText1, ftUserInv);
@@ -500,6 +515,237 @@ public class Main extends Application {
 		return scene;
 	}
 	
+	public class EmployeeClass{
+		ComboBox<String> pastV;
+		TextField tfWeight = new TextField();
+		String weight = "";
+
+	void collectFields(TextField tfw) {
+		tfw = tfWeight;
+		
+	}
+		
+	String returnFileFromVisitBox(ComboBox<String> cb) {
+		System.out.println(cb.getId());
+		return cb.getId();
+		//return cb.valueProperty().get();
+	}
+		
+	//Needs 10 inputs vitals->history->doctor data
+	void clearInputAreas( ) {
+		//Vitals
+		vWeightTF.setText("#");
+		vHeightTF.setText("#");
+		vBTempTF.setText("#");
+		vBPressTF.setText("#");
+		
+		//Medical History
+		prevHealthIssuesTA.setText("Type here");
+		prevMedsTA.setText("Type here");
+		immunizationsTA.setText("Type here");
+		
+		//Doctor Section
+		doctorNotesTA.setText("Type here");
+		medsTA.setText("Type here");
+	}
+	
+	void updateBoxes(String filename) {
+		filename = "PatientVisits\\" + filename;
+		
+		String entireFile = "";
+		try {		
+			entireFile = Files.readString(Paths.get(filename));
+			
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			//System.out.println("Unable to grab entire file from pastVisits combobox");
+			//e.printStackTrace();
+		}
+		if(entireFile.length() > 10) {
+		Scanner scanner = new Scanner(filename); //Get File
+		//scanner.useDelimiter("<");
+		weight = entireFile.substring(entireFile.indexOf("<") + 1, entireFile.indexOf(">"));
+		entireFile = entireFile.substring(entireFile.indexOf(">") + 1, entireFile.length());
+		vWeightTF.setText(weight);
+		//System.out.println(weight);
+		
+		//System.out.println(entireFile);
+		String height = entireFile.substring(entireFile.indexOf("<") + 1, entireFile.indexOf(">"));
+		entireFile = entireFile.substring(entireFile.indexOf(">") + 1, entireFile.length());
+		vHeightTF.setText(height);
+		
+		String bodyTemp = entireFile.substring(entireFile.indexOf("<") + 1, entireFile.indexOf(">"));
+		entireFile = entireFile.substring(entireFile.indexOf(">") + 1, entireFile.length());
+		vBTempTF.setText(bodyTemp);
+		
+		String bloodP = entireFile.substring(entireFile.indexOf("<") + 1, entireFile.indexOf(">"));
+		entireFile = entireFile.substring(entireFile.indexOf(">") + 1, entireFile.length());
+		vBPressTF.setText(bloodP);
+		
+		String over12 = entireFile.substring(entireFile.indexOf("<") + 1, entireFile.indexOf(">"));
+		//System.out.println(over12);
+		//Boolean isOver12 = Boolean.parseBoolean(over12);
+		entireFile = entireFile.substring(entireFile.indexOf(">") + 1, entireFile.length());
+		if(over12.equals("true")) {
+			//twelveCB.setSelected(true);
+		}
+		else {
+			//twelveCB.setSelected(false);
+		}
+		//Fin Vitals
+		
+		//Start updating Medical History
+		String prevHealthIssues = entireFile.substring(entireFile.indexOf("<") + 1, entireFile.indexOf(">"));
+		entireFile = entireFile.substring(entireFile.indexOf(">") + 1, entireFile.length());
+		prevHealthIssuesTA.setText(prevHealthIssues);
+		
+		String prevMeds = entireFile.substring(entireFile.indexOf("<") + 1, entireFile.indexOf(">"));
+		entireFile = entireFile.substring(entireFile.indexOf(">") + 1, entireFile.length());
+		prevMedsTA.setText(prevMeds);
+		
+		String prevImm = entireFile.substring(entireFile.indexOf("<") + 1, entireFile.indexOf(">"));
+		entireFile = entireFile.substring(entireFile.indexOf(">") + 1, entireFile.length());
+		immunizationsTA.setText(prevImm);
+		//end of updating medical history
+		
+		//Left Side
+		String docNotes = entireFile.substring(entireFile.indexOf("<") + 1, entireFile.indexOf(">"));
+		entireFile = entireFile.substring(entireFile.indexOf(">") + 1, entireFile.length());
+		doctorNotesTA.setText(docNotes);
+		
+		String prescribeMeds = entireFile.substring(entireFile.indexOf("<") + 1, entireFile.indexOf(">"));
+		entireFile = entireFile.substring(entireFile.indexOf(">") + 1, entireFile.length());
+		medsTA.setText(docNotes);
+		//End of medical notes
+		}
+	}
+
+	ComboBox<String> refreshPatientList(HBox prevVisitsBox, String doc_selectedPatient, ComboBox<String> patientNames, ComboBox<String> prevVisits, Label prevVisitsL) {	
+		prevVisitsBox.getChildren().clear();
+		doc_selectedPatient = patientNames.valueProperty().get();
+		prevVisits = getVisitsList(doc_selectedPatient);
+		prevVisitsL.setStyle("-fx-font: 20px \"Arial\";");
+		prevVisitsL.setAlignment(Pos.CENTER);
+		prevVisits = getVisitsList(doc_selectedPatient); //should be updated on every event on patientNames ComboBox
+		prevVisits.setPromptText("Visit");
+		prevVisits.getItems().add("Temp Visits");
+		prevVisits.getStyleClass().add("labelB");
+		prevVisits.setMinWidth(100);
+		prevVisits.setMaxWidth(200);
+		prevVisitsBox.getChildren().addAll(prevVisitsL, prevVisits);
+
+		pastV = prevVisits;
+		prevVisits.setOnAction(new EventHandler<ActionEvent>() {
+			@Override
+			public void handle(ActionEvent arg1) {
+				updateBoxes(pastV.valueProperty().get());
+			}
+		});
+		return prevVisits;
+	}
+
+	ComboBox<String> getPatientList(){
+		ComboBox<String> cb = new ComboBox<String>();
+		File root = new File("Users");
+		try {
+			File[] patientsFolder = root.listFiles();
+			for (int i = 0; i < patientsFolder.length; i++) {
+				if (patientsFolder[i].getName().endsWith(".txt")) {
+					String patientName = patientsFolder[i].getName();
+					patientName = patientName.substring(0, patientName.length() - 4); //shorten name
+					cb.getItems().addAll(patientName);
+				}
+			}
+		}
+		catch (Exception e) { // Throw error message if file cannot be created
+			// TODO Auto-generated catch block
+			//System.out.println("\nPatient ComboBox unable to be updated");
+			e.printStackTrace();
+			return cb; // Dont return a pane on error
+		}
+		
+		return cb;
+	}
+
+	ComboBox<String> getVisitsList(String username){
+		//System.out.println(username);
+		ComboBox<String> cb = new ComboBox<String>();
+		File root = new File("PatientVisits");
+
+		try {
+			File[] visits = root.listFiles();
+			for (int i = 0; i < visits.length; i++) {
+				//System.out.println("\nEnter for loop\n");
+				if (visits[i].getName().startsWith(username) ) {
+					//System.out.println("add item");
+					cb.getItems().addAll(visits[i].getName());
+				}
+			}
+		} catch (Exception e) { // Throw error message if file cannot be created
+			// TODO Auto-generated catch block
+			//System.out.println("\nVisits ComboBox unable to be updated");
+			//e.printStackTrace();
+			return cb; // Dont return a pane on error
+		}
+		return cb;
+	}
+
+	void createNewVisit(String username, String vitals, String history, String docNotes, String presMeds ) {
+		//System.out.println(username);
+		String directory = "PatientVisits";
+		
+		LocalDate todaysDate = LocalDate.now();
+		String filename = username + "_" + todaysDate + ".txt";
+		
+		try {
+			//System.out.println(filename);
+			//System.out.println("Entered try");
+			FileWriter fw = new FileWriter(directory + "\\" + filename);
+			PrintWriter pw = new PrintWriter(fw);
+			pw.print("Visit for " + username + " on: " + todaysDate + "\n");
+			pw.print(vitals);
+			pw.print(history);
+			pw.print("\nNotes from the Doctor: " + "<" + docNotes + ">" + "\n");
+			pw.print("\nMedications to prescribe: " + "<" + presMeds + ">" + "\n");
+			
+			pw.close();
+			
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			//System.out.println("\nUnable to create new visit");
+			//e.printStackTrace();
+		}
+	}
+
+	String vitalsOuput(String weight, String height, String bodyTemp, String bloodP, boolean over12) {
+		String finalOut = "";
+		finalOut += "Vitals Information\n";
+		finalOut += "Weight: " + "<" + weight + ">" + "\n";
+		finalOut += "Height: " + "<" + height + ">" + "\n";
+		finalOut += "Body Temperature: " + "<" + bodyTemp + ">" + "\n";
+		finalOut += "Blood Pressure: " + "<" + bloodP + ">" + "\n";
+		if(over12 == true) {
+			finalOut += "Age is over 12?: <true>\n";
+		}
+		else {
+			finalOut += "Age is over 12?: <false>\n";
+		}
+		
+		return finalOut;
+	}
+
+	String medicalHistoryOutput(String hIssues, String pMedications, String hImmunizations) {
+		String finalOut = "";
+		finalOut += "\nMedical History\n";
+		finalOut += "\nPrevious Health Issues:\n" + "<" + hIssues + ">" + "\n";
+		finalOut += "\nPrevious Medications:\n" + "<" + pMedications + ">" + "\n";
+		finalOut += "\nHistory of Immunizations:\n" + "<" + hImmunizations + ">" + "\n";
+		return finalOut;
+	}
+	
+	} //end of EmployeeClass
+	
+	
 	public Scene doctorView () {
 		EmployeeClass employeeClass = new EmployeeClass();
 		
@@ -544,6 +790,7 @@ public class Main extends Application {
 		patientL.setStyle("-fx-font: 20px \"Arial\";");
 		patientL.setStyle("-fx-min-width: 100;");
 		patientL.setAlignment(Pos.CENTER);
+			//Isaiah Change
 			ComboBox<String> patientNames = employeeClass.getPatientList();
 		patientNames.setPromptText("Name");
 		patientNames.getItems().add("Temp Child");
@@ -557,7 +804,8 @@ public class Main extends Application {
 		Label prevVisitsL = createLabel("Previous Visits: "); // patient label
 		prevVisitsL.setStyle("-fx-font: 20px \"Arial\";");
 		prevVisitsL.setAlignment(Pos.CENTER);
-			prevVisits = new ComboBox<String>(); //should be updated on every event on patientNames ComboBox
+			//Isaiah Change
+			ComboBox<String> prevVisits = employeeClass.getVisitsList(doc_selectedPatient); //should be updated on every event on patientNames ComboBox
 		prevVisits.setPromptText("Visit");
 		prevVisits.getItems().add("Temp Visits");
 		prevVisits.getStyleClass().add("labelB");
@@ -640,6 +888,7 @@ public class Main extends Application {
 		
 		CheckBox twelveCB = new CheckBox("Over 12 years old?");
 		twelveCB.setStyle("-fx-font: bold 26px \"Arial\";");
+		twelveCB.setSelected(false);
 		
 		vitalsInfoBroad.getChildren().addAll(vitalsInfoL, vitals, twelveCB);
 		vitalsInfoBroad.setAlignment(Pos.CENTER);
@@ -657,41 +906,44 @@ public class Main extends Application {
 		//imageBox.setStyle("-fx-background-color: #37718E;");
 		blankBox.setPrefHeight(140);
 		
-		// action listener(s)
-		
-		
+		// START OF ISAIAH IN MAIN --> Isaiah added action listener(s)
 		//Middle Section
+		//Refresh PatientVisit box
 		patientNames.setOnAction(new EventHandler<ActionEvent>() {
 			@Override
 			public void handle(ActionEvent arg0) {
+				//System.out.println("Presesd patient combobox");
 				doc_selectedPatient = patientNames.valueProperty().get();
-				employeeClass.refreshPatientList(prevVisitsBox, doc_selectedPatient, patientNames, patientNames, prevVisitsL);
-				
-				// TODO Auto-generated method stub
-				/*
-				doc_selectedPatient = patientNames.valueProperty().get();
-				prevVisits = employeeClass.getVisitsList(doc_selectedPatient);
-				prevVisitsL.setStyle("-fx-font: 20px \"Arial\";");
-				prevVisitsL.setAlignment(Pos.CENTER);
-					//prevVisits = new ComboBox<String>();//employeeClass.getVisitsList("null"); //should be updated on every event on patientNames ComboBox
-				prevVisits.setPromptText("Visit");
-				prevVisits.getItems().add("Temp Visits");
-				prevVisits.getStyleClass().add("labelB");
-				prevVisits.setMinWidth(100);
-				prevVisits.setMaxWidth(200);
-				
-				prevVisitsBox.getChildren().addAll(prevVisitsL, prevVisits);
-				*/
+				employeeClass.refreshPatientList(prevVisitsBox, doc_selectedPatient, patientNames, patientNames, prevVisitsL);			
 			}
 		});
-		
-		//Right Side
-		doc_selectedPatient = patientNames.valueProperty().get();
-		createVisit.setOnAction(e -> employeeClass.createNewVisit(doc_selectedPatient));
+		employeeClass.collectFields(vWeightTF);
+		//Refresh Data after choosing Visit
 		prevVisits = employeeClass.getVisitsList(doc_selectedPatient);
+		
+		//Update current items
+		doc_selectedPatient = patientNames.valueProperty().get();
 		employeeClass.refreshPatientList(prevVisitsBox, doc_selectedPatient, patientNames, patientNames, prevVisitsL);
 		
-		// end of action listeners
+		createVisit.setOnAction(new EventHandler<ActionEvent>(){
+			@Override
+			public void handle(ActionEvent arg0) {
+				// TODO Auto-generated method stub
+				ComboBox<String> cbt = employeeClass.getVisitsList(doc_selectedPatient);
+				doc_selectedPatient = patientNames.valueProperty().get();
+				vitalsInfo = employeeClass.vitalsOuput(vWeightTF.getText(),vHeightTF.getText(),vBTempTF.getText(),vBPressTF.getText(), twelveCB.isSelected());
+				medicalHistory = employeeClass.medicalHistoryOutput(prevHealthIssuesTA.getText(), prevMedsTA.getText() ,immunizationsTA.getText() );
+				doctorsNotes = doctorNotesTA.getText();
+				prescribeMeds = medsTA.getText();
+				
+				employeeClass.createNewVisit(doc_selectedPatient, vitalsInfo, medicalHistory, doctorsNotes, prescribeMeds);				//createVisit.setOnAction(e -> employeeClass.createNewVisit(doc_selectedPatient, vitalsInfo, medicalHistory, doctorsNotes, prescribeMeds));
+				//createVisit.setOnAction(e -> System.out.println(employeeClass.vitalsOuput(vWeightTF.getText(),vHeightTF.getText(),vBTempTF.getText(),vBPressTF.getText(), twelveCB.isSelected())));
+				cbt = employeeClass.getVisitsList(doc_selectedPatient);
+				employeeClass.refreshPatientList(prevVisitsBox, doc_selectedPatient, patientNames, patientNames, prevVisitsL);			
+				employeeClass.clearInputAreas();
+			}
+		});
+		// end of action listeners (END OF ISAIAH USE IN MAIN)
 		
 		// finalization
 		sroot.setTop(imageBox);
@@ -708,6 +960,7 @@ public class Main extends Application {
 		Scene scene = new Scene(sroot);				// creates and launches the application
 		scene.getStylesheets().add(getClass().getResource("application.css").toExternalForm());
 		scene.setFill(Color.web("#E7F8FE"));
+		
 		return scene;
 	}
 	
